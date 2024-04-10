@@ -1,11 +1,14 @@
 # pyqt_csv_viewer
-PyQt5 CSV viewer
+PyQt5 CSV and Excel viewer
 
-This is a PyQt application that allows you to view the contents of each CSV file in a specific folder using a QTableWidget.
+This is a PyQt application that allows you to view the contents of each CSV and excel file in a specific folder using a QTableWidget.
+
+You can sort and search the data in any excel files or csv files.
 
 ## Requirements
 * PyQt5 >= 5.14
 * pandas
+* openpyxl
 
 ## How to Use
 1. git clone ~
