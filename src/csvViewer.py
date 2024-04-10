@@ -1,5 +1,7 @@
 import pandas as pd
-from PyQt5.QtCore import QSortFilterProxyModel, Qt
+import numpy as np
+
+from PyQt5.QtCore import QSortFilterProxyModel, Qt, QCollator
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, \
     QStyledItemDelegate, QAbstractItemView, QHBoxLayout, QComboBox, QLabel, QSizePolicy, QTableView
@@ -7,20 +9,29 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget, \
 from instantSearchBar import InstantSearchBar
 
 
-# for search feature
-class FilterProxyModel(QSortFilterProxyModel):
-    def __init__(self):
-        super().__init__()
-        self.__searchedText = ''
+class NumericSortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.collator = QCollator()
+        self.collator.setNumericMode(True)
+        self.collator.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
-    @property
-    def searchedText(self):
-        return self.__searchedText
+    def lessThan(self, left, right):
+        leftData = self.sourceModel().data(left)
+        rightData = self.sourceModel().data(right)
 
-    @searchedText.setter
-    def searchedText(self, value):
-        self.__searchedText = value
-        self.invalidateFilter()
+        # Check if the data is numeric
+        if isinstance(leftData, (int, float, np.float64)) and isinstance(rightData, (int, float, np.float64)):
+            return leftData < rightData
+        # Check if the data is a string that can be converted to a number
+        elif isinstance(leftData, str) and isinstance(rightData, str) and leftData.isdigit() and rightData.isdigit():
+            return int(leftData) < int(rightData)
+        # Compare the data as strings
+        else:
+            # Convert the data to strings if they are not already strings
+            leftData = str(leftData) if not isinstance(leftData, str) else leftData
+            rightData = str(rightData) if not isinstance(rightData, str) else rightData
+            return self.collator.compare(leftData, rightData) < 0
 
 
 class AlignDelegate(QStyledItemDelegate):
@@ -35,14 +46,14 @@ class CSVViewer(QWidget):
         self.__initUi()
 
     def __initUi(self):
-        self.setWindowTitle('CSV Viewer')
+        self.setWindowTitle('CSV & Excel Viewer')
 
         self.__tableWidget = QTableView()
 
         self.__tableWidget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
         # init the proxy model
-        self.__proxyModel = FilterProxyModel()
+        self.__proxyModel = NumericSortFilterProxyModel()
 
         # set the table model as source model to make it enable to feature sort and filter function
         self.__tableWidget.setModel(self.__proxyModel)
@@ -88,10 +99,16 @@ class CSVViewer(QWidget):
         self.__comboBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     def loadCSV(self, file_path):
-        # Read the CSV file into a Pandas DataFrame
-        df = pd.read_csv(file_path)
+        # Check extension
+        df = ''
+        if file_path.endswith('.csv'):
+            # Read the CSV file into a Pandas DataFrame
+            df = pd.read_csv(file_path)
+        else:
+            # Read the Excel file into a Pandas DataFrame
+            df = pd.read_excel(file_path)
 
-        column_names = df.columns.tolist()
+        column_names = list(map(str, df.columns.tolist()))
         num_rows, num_columns = df.shape
 
         # Initialize the model with rows and columns

@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
         self.__csvViewer = CSVViewer()
 
         lay = QVBoxLayout()
-        lay.addWidget(QLabel('CSV Window'))
+        lay.addWidget(QLabel('CSV & Excel Window'))
         lay.addWidget(self.__csvViewer)
 
         rightWidget = QWidget()
@@ -75,7 +75,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter)
 
     def __addList(self, dirname):
-        filenames = [os.path.join(dirname, filename) for filename in os.listdir(dirname) if os.path.splitext(filename)[-1] == '.csv']
+        filenames = [os.path.join(dirname, filename) for filename in os.listdir(dirname) if os.path.splitext(filename)[-1] == '.csv'
+                     or os.path.splitext(filename)[-1] == '.xlsx']
         self.__listWidget.addItems(filenames)
 
     def __showContent(self, item):
